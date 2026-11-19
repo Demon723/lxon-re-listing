@@ -27,3 +27,12 @@ closing identity:
 - Additional LXON escrowed against wLXON burns (organic bridge usage)
 - A recapitalization decision by the owner (economic, not technical)
 - Legacy wLXON retirement completing (frees the implicit backing term)
+
+## Owner decision — backing policy (2026-11-20)
+
+OWNER-ACCEPTED-PARTIAL-BACKING: delegated decision ("do whats best").
+Policy: wLXON remains ~50% pro-rata backed by design of the current
+bridge/legacy structure; the disclosure above is the canonical public
+statement. No recapitalization, no synthetic backing, no 1:1 claims.
+Revisit if: legacy wLXON retirement completes, or organic bridge volume
+materially grows escrow.
