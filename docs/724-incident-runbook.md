@@ -73,3 +73,10 @@ and `T=0x57b875ab86a40d79a1c35e44aa22008dfd049dc9` (LXON), `B=0xcd39954cd1484dd8
 - **Write RPC has no rate limit or auth.** `explorer.lxon.in/write-rpc` proxies POSTs to besu 8545 (localhost-only). Caddy 2.6.2 stock has no rate_limit module; spam/abuse resistance needs a small throttling proxy (e.g. extend rpc-gateway.py with a token bucket for eth_sendRawTransaction). Until then the endpoint is open — acceptable for a settlement chain, flagged for mainnet hardening.
 - **Attestor quorum keys are colocated.** All three validator keys live in `lxon-evm-node/besu/validators/*.hex` on the operator's machine; attestor-mac keystore is local too. The 2-of-3 bridge quorum is cryptographically real but physically centralized — one compromised machine compromises the quorum. Distribute keys across independent hosts before calling the bridge production-decentralized.
 - **Reconciliation residual -1 LXON.** The releasedToUsers term (`totalReceivedFrom[137][wLXON]`) overcounts by exactly the smoke-test round trip (self-referential mint+burn). Within 0.01% tolerance; needs per-epoch flow netting to zero exactly.
+
+## Update 2026-11-20 — write RPC rate limit deployed
+
+`write-gateway.service` (python, /opt/lxon/write-gateway.py, repo copy: host/write-gateway.py)
+now fronts besu on 127.0.0.1:8547; Caddy write-rpc proxies to it. Per-IP token bucket:
+30 write-method calls/min (eth_sendRawTransaction, eth_sign*, personal_*, admin_/debug_/miner_/txpool_);
+reads unthrottled. Client IP taken from X-Forwarded-For (set by Caddy). Verified live.
