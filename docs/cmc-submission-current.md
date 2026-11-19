@@ -25,6 +25,11 @@ LXON/docs/listing/ (those quote dead addresses — see their own warnings).
 - 137 wLXON/USDC.e QuickSwap 0x8bFB69eD...: ~$1.26 depth — effectively none
 - No CEX listings yet
 
+## Contract security note
+- wLXON compiled with solc ^0.8.26; Polygonscan compiler-bug banner reviewed —
+  none of the flagged patterns (recursive storage structs, bytes-array deletes,
+  via-IR, mutual recursion) exist in the source. Boilerplate, not exposure.
+
 ## Required disclosures (do not omit)
 - Chain restarted 2026-11-03; pre-restart history discarded; no migration
   path exists (owner-accepted, migration/notice.md)
