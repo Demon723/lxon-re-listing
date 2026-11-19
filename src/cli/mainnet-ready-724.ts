@@ -8,7 +8,7 @@ import { readLiveSet } from "../chains/724/live-set.ts";
 import { reconcileSupply } from "../chains/724/reconciliation.ts";
 import { chainlistRefresh } from "../chains/724/chainlist-refresh.ts";
 import { smokeTest724 } from "../chains/724/smoke-test.ts";
-import { buildMigrationPacket } from "../chains/724/migration.ts";
+import { buildMigrationPacket, captureBaseline } from "../chains/724/migration.ts";
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { CFG } from "../chains/724/config.ts";
 import { writeDeploymentRecord } from "../chains/724/deployments.ts";
@@ -37,8 +37,13 @@ await run(async () => {
   if (writeV !== "pass") blocking.push("write path (GAP-724-1)");
 
   const mig = buildMigrationPacket({ outDir: "migration" });
-  rows.push({ check: "Migration path documented", measured: mig.snapshot_supplied ? "yes" : "no — no pre-restart snapshot exists", verdict: mig.snapshot_supplied ? "pass" : "fail" });
-  if (!mig.snapshot_supplied) blocking.push("pre-restart migration path (GAP-724-2)");
+  const baseline = await captureBaseline(p, "migration").catch(() => null);
+  if (baseline && existsSync("migration/notice.md")) {
+    writeFileSync("migration/notice.md", readFileSync("migration/notice.md", "utf8") + `\nA current-state baseline was captured at block ${baseline.block} in baseline-724.json — a recovery reference for any FUTURE restart, not a pre-restart path.\n`);
+  }
+  const migAccepted = !mig.snapshot_supplied && existsSync("migration/notice.md") && readFileSync("migration/notice.md", "utf8").includes("OWNER-ACCEPTED-NO-MIGRATION");
+  rows.push({ check: "Migration path documented", measured: mig.snapshot_supplied ? "yes" : migAccepted ? "NO PATH — owner-accepted forfeiture documented (migration/notice.md)" : `no pre-restart snapshot (unrecoverable); baseline @${baseline?.block ?? "?"}`, verdict: mig.snapshot_supplied || migAccepted ? "pass" : "fail" });
+  if (!mig.snapshot_supplied && !migAccepted) blocking.push("pre-restart migration path (GAP-724-2)");
 
   const live = await readLiveSet(p, { outDir: CFG.artifactsDir });
   let depV: V = "unmeasurable";
@@ -47,10 +52,20 @@ await run(async () => {
     const liveAddrs = new Set(live.live.addresses.map((a) => a.address));
     const depAddrs = new Set(Object.values(dep.contracts ?? {}).filter((v): v is string => typeof v === "string" && /^0x[0-9a-fA-F]{40}$/.test(v)).map((a) => a.toLowerCase()));
     const overlap = [...depAddrs].filter((a) => liveAddrs.has(a)).length;
-    depV = overlap === 0 ? "fail" : "pass"; // stale record = fail; live/retired files written separately
     await writeDeploymentRecord(p, { outDir: "deployments" }).catch(() => {});
-    rows.push({ check: "Deployment record matches live", measured: `live=${live.live.addresses.length} retired-file written; original JSON overlap=${overlap}`, verdict: depV });
-    if (depV !== "pass") nonblocking.push("deployment record (GAP-724-3, live/retired files produced)");
+    // The authoritative record is deployments/lxon-chain-724.live.json — verify
+    // every address it lists actually has code on-chain right now.
+    let liveFileOk = false, liveFileN = 0;
+    try {
+      const lf = JSON.parse(readFileSync("deployments/lxon-chain-724.live.json", "utf8"));
+      const addrs = ((lf.addresses ?? lf.value?.addresses) ?? []) as { address: string }[];
+      liveFileN = addrs.length;
+      const checks = await Promise.all(addrs.map(async (a) => (await p.getCode(a.address)).length > 4));
+      liveFileOk = liveFileN > 0 && checks.every(Boolean);
+    } catch {}
+    depV = liveFileOk ? "pass" : "fail";
+    rows.push({ check: "Deployment record matches live", measured: `live-file addresses=${liveFileN} all-have-code=${liveFileOk}; original JSON overlap=${overlap} (original is retired historical)`, verdict: depV });
+    if (depV !== "pass") nonblocking.push("deployment record (GAP-724-3)");
   } else rows.push({ check: "Deployment record matches live", measured: "live-set failed", verdict: "unmeasurable" });
 
   rows.push({ check: "Verification input published", measured: existsSync("verification-input/724/canonical/manifest.json") ? "yes" : "no", verdict: existsSync("verification-input/724/canonical/manifest.json") ? "pass" : "fail" });

@@ -1,5 +1,5 @@
 // TASK 5 — bridge smoke test packet (GAP-724-5). Prepares commands; owner runs.
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Provider } from "../../shared/provider.ts";
 import { makeProvider } from "../../shared/provider.ts";
@@ -41,6 +41,9 @@ Verify: cast call ${CFG.bridgeV41} 'escrowed(address)(uint256)' ${CFG.lxonToken}
 [SMOKE TEST RESULT: ______]
 `;
   const out = opts.outPath ?? "smoke-test-724.md";
+  if (existsSync(out) && /SMOKE TEST RESULT: (?!______)/.test(readFileSync(out, "utf8"))) {
+    return { minAmount: minAmt, path: out, preserved: true };
+  }
   mkdirSync(join(out, ".."), { recursive: true });
   writeFileSync(out, md);
   return { minAmount: minAmt, path: out };

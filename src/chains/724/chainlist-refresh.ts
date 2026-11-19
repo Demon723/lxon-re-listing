@@ -15,13 +15,25 @@ export async function chainlistRefresh(opts: { outDir?: string; maxLag?: number 
     const chains = (await res.json()) as any[];
     const c = chains.find((x) => x.chainId === 724);
     if (c) {
-      // ethereum-lists chains.json does not carry a height; the chainlist
-      // frontend caches one. Try the public chainlist RPC-status source.
-      registryHeight = "unmeasurable";
-      note = "chainid.network registry has no height field; chainlist.org frontend height not scraped — reported unmeasurable per spec";
+      // chains.json carries no height field. Measure the head reported by the
+      // registry-listed RPC for chain 724 and compare it to our RPC head.
+      const rpc = Array.isArray(c.rpc) ? c.rpc.find((r: string) => typeof r === "string" && r.startsWith("https")) : undefined;
+      if (rpc) {
+        try {
+          const rp = await makeProvider(rpc, CFG.expectedChainId);
+          registryHeight = Number(await rp.blockNumber());
+          note = `registry RPC ${rpc} head measured directly`;
+        } catch (e) {
+          registryHeight = "unmeasurable";
+          note = `registry RPC ${rpc} unreachable: ${(e as Error).message}`;
+        }
+      } else {
+        registryHeight = "unmeasurable";
+        note = "chain 724 in registry but no https RPC listed";
+      }
     } else {
       registryHeight = "unmeasurable";
-      note = "chain 724 not found in chainid.network registry";
+      note = "chain 724 not found in chainid.network registry (PR ethereum-lists/chains#9107 pending)";
     }
   } catch (e) { note = `registry fetch failed: ${(e as Error).message}`; }
   const gap = registryHeight === "unmeasurable" ? "unmeasurable" : Number(head) - registryHeight;
