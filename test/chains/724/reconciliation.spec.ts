@@ -13,6 +13,7 @@ test("closing identity: supply724 = stake + escrow + legacy_wLXON_137", async ()
       if (data.startsWith("0x18160ddd")) return u256(4071052000001000000000000n); // LXON supply
       if (data.startsWith("0x70a08231")) return u256(61052n * E18);              // bridge balance
       if (data.startsWith("0xd01242f9")) return u256(31052n * E18);              // escrowed
+      if (data.startsWith("0x8fb44409")) return u256(0n);                      // releasedToUsers
       return "0x";
     },
   });

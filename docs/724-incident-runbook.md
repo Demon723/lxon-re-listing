@@ -67,3 +67,9 @@ and `T=0x57b875ab86a40d79a1c35e44aa22008dfd049dc9` (LXON), `B=0xcd39954cd1484dd8
 - Owner action: forensic review; possible re-restart decision (owner only).
 - Rollback: none automated.
 - Prevention: live-set check every verify; deployment JSON divergence = exit 53.
+
+## Known gaps (2026-11-20 audit)
+
+- **Write RPC has no rate limit or auth.** `explorer.lxon.in/write-rpc` proxies POSTs to besu 8545 (localhost-only). Caddy 2.6.2 stock has no rate_limit module; spam/abuse resistance needs a small throttling proxy (e.g. extend rpc-gateway.py with a token bucket for eth_sendRawTransaction). Until then the endpoint is open — acceptable for a settlement chain, flagged for mainnet hardening.
+- **Attestor quorum keys are colocated.** All three validator keys live in `lxon-evm-node/besu/validators/*.hex` on the operator's machine; attestor-mac keystore is local too. The 2-of-3 bridge quorum is cryptographically real but physically centralized — one compromised machine compromises the quorum. Distribute keys across independent hosts before calling the bridge production-decentralized.
+- **Reconciliation residual -1 LXON.** The releasedToUsers term (`totalReceivedFrom[137][wLXON]`) overcounts by exactly the smoke-test round trip (self-referential mint+burn). Within 0.01% tolerance; needs per-epoch flow netting to zero exactly.

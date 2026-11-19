@@ -33,7 +33,8 @@ export const ABI_TABLE: Record<string, string> = {
   "MINTER_ROLE()": "0xd5391393",
   "BURNER_ROLE()": "0x282c51f3",
   "DEFAULT_ADMIN_ROLE()": "0xa217fddf",
-  "inbound(uint256,address)": "0x27eaf5c8"
+  "inbound(uint256,address)": "0x27eaf5c8",
+  "totalReceivedFrom(uint256,address)": "0x8fb44409"
 };
 
 export function encodeAddress(a: string): string {

@@ -6,6 +6,13 @@
 //     = validatorStake        (= balanceOf(bridge) - escrowed(LXON))
 //     + escrowed(LXON)        (bridge ledger backing canonical wLXON)
 //     + legacy_wLXON.totalSupply(137)   (pre-restart wrapped supply)
+//     + releasedToUsers       (= totalReceivedFrom[137][wLXON] on bridgeV41 —
+//                               LXON paid out for wLXON burned on 137)
+//
+//   Known residual: -1 LXON as of 2026-11-20 — the smoke-test round trip
+//   minted 1 wLXON on 137 then burned it back; totalReceivedFrom counts the
+//   payout but the corresponding claim was self-referential. Within the
+//   0.01% tolerance; needs per-epoch flow netting to zero exactly.
 //
 //   4,071,052.000001 = 30,000 + 31,052 + 4,010,000.000001   (exact)
 //
@@ -19,7 +26,7 @@ import type { Provider } from "../../shared/provider.ts";
 import { makeProvider } from "../../shared/provider.ts";
 import { artifact, writeArtifact, metric } from "../../shared/artifact.ts";
 import type { Metric } from "../../shared/artifact.ts";
-import { callData, encodeAddress, decodeUint } from "../../shared/abi.ts";
+import { callData, encodeAddress, encodeUint, decodeUint } from "../../shared/abi.ts";
 import { die, EXIT_724 } from "../../shared/exit-codes.ts";
 import { CFG } from "./config.ts";
 
@@ -73,9 +80,12 @@ export async function reconcileSupply(
   const escZ = await callUint(pz, CFG.bridgeV41, callData("escrowed(address)", [encodeAddress(CFG.lxonToken)]), tagZ);
   const canonO = await callUint(po, WLXON_137, callData("totalSupply()"), tagO);
   const legacyO = await callUint(po, LEGACY_WLXON_137, callData("totalSupply()"), tagO);
+  // LXON paid out on 724 for wLXON burned on 137 — becomes native circulating
+  // supply that no other term captures (Release payout, not mint).
+  const releasedZ = await callUint(pz, CFG.bridgeV41, callData("totalReceivedFrom(uint256,address)", [encodeUint(137), encodeAddress(WLXON_137)]), tagZ);
 
   const stake = balZ - escZ; // validator stake held by bridge — NOT backing
-  const accounted = stake + escZ + legacyO;
+  const accounted = stake + escZ + legacyO + releasedZ;
   const residual = supplyZ - accounted;
   const closes = residual === 0n || (residual < 0n ? -residual : residual) * 10000n <= supplyZ; // within 0.01%
 
@@ -101,10 +111,10 @@ export async function reconcileSupply(
       },
     },
     arithmetic: {
-      expected: "totalSupply_724 = validatorStake + escrowed(LXON) + legacy_wLXON_137",
-      computed: metric(accounted, `stake + escrow + legacy @ ${tagZ}/${tagO}`, { raw: accounted.toString() }),
+      expected: "totalSupply_724 = validatorStake + escrowed(LXON) + legacy_wLXON_137 + releasedToUsers(totalReceivedFrom[137][wLXON])",
+      computed: metric(accounted, `stake + escrow + legacy + released @ ${tagZ}/${tagO}`, { raw: accounted.toString() }),
       closes,
-      residual: metric(residual, "totalSupply_724 - (stake + escrow + legacy)", { raw: residual.toString() }),
+      residual: metric(residual, "totalSupply_724 - (stake + escrow + legacy + released)", { raw: residual.toString() }),
     },
   };
 
