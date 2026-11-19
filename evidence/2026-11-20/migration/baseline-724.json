@@ -1,0 +1,11 @@
+{
+ "note": "CURRENT-STATE baseline captured post-restart. NOT a pre-restart snapshot — pre-restart balances are unrecoverable (242,493 blocks discarded 2026-11-03).",
+ "block": "0x458ed",
+ "captured_at": "2026-11-19T20:01:25.942Z",
+ "totalSupply_724": "4071052000001000000000000",
+ "escrowed_LXON_in_bridgeV41": "30952000000000000000000",
+ "bridgeV41_LXON_balance": "60952000000000000000000",
+ "validator_stake_non_backing": "30000000000000000000000",
+ "lxonToken": "0x57b875ab86a40d79a1c35e44aa22008dfd049dc9",
+ "bridgeV41": "0xcd39954cd1484dd8c7277881f3a7d328a6940788"
+}
