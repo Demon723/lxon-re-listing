@@ -1,0 +1,25 @@
+{
+  "name": "lxon-re-listing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Measurement toolchain for the LXON re-listing package. Zero runtime dependencies: Node >= 22.18 type-strips the .ts sources directly.",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "verify-724": "node src/cli/verify-724.ts",
+    "plants-724": "node src/cli/plants-724.ts",
+    "all-724": "node src/cli/all-724.ts",
+    "health-724": "node src/cli/health-724.ts",
+    "roles-724": "node src/cli/roles-724.ts",
+    "reconcile-724": "node src/cli/reconcile-724.ts",
+    "explorer-724": "node src/cli/explorer-724.ts",
+    "live-set-724": "node src/cli/live-set-724.ts",
+    "chainlist-724": "node src/cli/chainlist-724.ts",
+    "verify-input-724": "node src/cli/verify-input-724.ts",
+    "owner-decisions-724": "node src/cli/owner-decisions-724.ts",
+    "test": "node --test test/",
+    "mainnet-ready-724": "node src/cli/mainnet-ready-724.ts"
+  }
+}

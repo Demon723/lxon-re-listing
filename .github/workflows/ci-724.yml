@@ -1,0 +1,33 @@
+name: ci-724
+on:
+  push:
+    paths: ["re-listing/**"]
+  pull_request:
+    paths: ["re-listing/**"]
+  schedule:
+    - cron: "0 6 * * 1" # weekly fixture refresh
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: re-listing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: plants (fixtures only, no network assumptions)
+        run: make plants-724
+      - name: unit tests
+        run: make test
+      - name: live verify-724
+        if: env.LXON_RPC_724 != ''
+        env:
+          LXON_RPC_724: ${{ secrets.LXON_RPC_724 }}
+        run: make verify-724
+      - name: skip-live notice
+        if: env.LXON_RPC_724 == ''
+        run: echo "LXON_RPC_724 unset — live verify skipped, fixtures/plants only"

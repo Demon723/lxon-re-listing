@@ -1,0 +1,8 @@
+{
+ "generated_at_utc": "2026-11-19T11:06:58.106Z",
+ "chainId": "0x2d4",
+ "headBlock": "0x43fe0",
+ "lxon": "0x57b875ab86a40d79a1c35e44aa22008dfd049dc9",
+ "bridge": "0xcd39954cd1484dd8c7277881f3a7d328a6940788",
+ "note": "weekly fixture snapshot for ci-724 fixture mode; regenerate via refresh-fixtures"
+}

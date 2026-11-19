@@ -1,0 +1,34 @@
+name: refresh-fixtures-724
+on:
+  schedule:
+    - cron: "0 6 * * 1" # weekly
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: re-listing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: snapshot chain-724 head + token/bridge addresses
+        run: |
+          node -e '
+          (async()=>{
+          const fs=require("fs");
+          const rpc=process.env.LXON_RPC_724||"https://rpc.lxon.in";
+          const call=async(m,p=[])=>{const r=await fetch(rpc,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",method:m,params:p,id:1})});return (await r.json()).result};
+          const head=await call("eth_blockNumber");
+          const snap={generated_at_utc:new Date().toISOString(),chainId:"0x2d4",headBlock:head,
+           lxon:"0x57b875ab86a40d79a1c35e44aa22008dfd049dc9",bridge:"0xcd39954cd1484dd8c7277881f3a7d328a6940788",
+           note:"weekly fixture snapshot for ci-724 fixture mode; regenerate via refresh-fixtures"};
+          fs.writeFileSync("test/fixtures/724-snapshot.json",JSON.stringify(snap,null,1)+"\n");
+          console.log("fixture head",head);})().catch(e=>{console.error(e.message);process.exit(1)})'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 724-snapshot
+          path: re-listing/test/fixtures/724-snapshot.json
